@@ -1,0 +1,35 @@
+# ============================================================
+# AI 2D to 3D Generator - Backend Requirements
+# ============================================================
+# Install PyTorch FIRST, matching your CUDA version (or CPU-only).
+# See https://pytorch.org/get-started/locally/ for the right command.
+#
+# Example (CUDA 12.1):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+# Example (CPU only):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+# ============================================================
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+pydantic==2.9.2
+
+# --- AI / 3D pipeline ---
+# TripoSR itself is not on PyPI; it is loaded from the official repo
+# (see README.md -> "Install TripoSR"). These are TripoSR's own deps.
+einops==0.8.0
+omegaconf==2.3.0
+transformers==4.44.2
+huggingface_hub==0.24.6
+trimesh==4.4.9
+rembg==2.0.59
+onnxruntime==1.19.2          # CPU. Use onnxruntime-gpu instead if you have CUDA.
+xatlas==0.0.9
+imageio==2.35.1
+imageio-ffmpeg==0.5.1
+Pillow==10.4.0
+numpy==1.26.4
+scikit-image==0.24.0
+pymcubes==0.1.4
+aiofiles==24.1.0
