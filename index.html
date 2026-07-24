@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 2D to 3D Generator</title>
+<meta name="theme-color" content="#111111">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 32 32" width="26" height="26" fill="none">
+          <path d="M16 2 28 9v14L16 30 4 23V9L16 2Z" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M16 2v28M4 9l12 7 12-7M4 23l12-7 12 7" stroke="var(--accent)" stroke-width="1.4" opacity="0.55"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">AI 2D&nbsp;&rarr;&nbsp;3D</span>
+        <span class="brand-sub">Generator</span>
+      </div>
+      <button id="themeToggle" class="icon-btn" title="Ganti tema" aria-label="Ganti tema">
+        <svg id="themeIconMoon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+    <!-- Upload zone -->
+    <section class="panel">
+      <h2 class="panel-title">1. Unggah Gambar</h2>
+
+      <div id="dropzone" class="dropzone">
+        <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden>
+        <div id="dropzoneEmpty" class="dropzone-empty">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0 4 4m-4-4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <p><strong>Seret &amp; lepas</strong> gambar di sini</p>
+          <p class="dropzone-hint">atau klik untuk memilih file — JPG, PNG, WEBP · maks 20MB</p>
+        </div>
+
+        <div id="dropzonePreview" class="dropzone-preview hidden">
+          <img id="previewImg" alt="Preview gambar">
+          <button id="removeImageBtn" class="chip-btn" type="button">Ganti gambar</button>
+        </div>
+      </div>
+
+      <div id="uploadProgressWrap" class="progress-wrap hidden">
+        <div class="progress-track"><div id="uploadProgressBar" class="progress-bar"></div></div>
+        <span id="uploadProgressLabel" class="progress-label">0%</span>
+      </div>
+    </section>
+
+    <!-- Options -->
+    <section class="panel">
+      <h2 class="panel-title">2. Opsi Output</h2>
+      <div class="format-grid" id="formatGrid">
+        <label class="format-chip"><input type="checkbox" value="glb" checked><span>GLB</span></label>
+        <label class="format-chip"><input type="checkbox" value="obj"><span>OBJ</span></label>
+        <label class="format-chip"><input type="checkbox" value="stl"><span>STL</span></label>
+        <label class="format-chip"><input type="checkbox" value="ply"><span>PLY</span></label>
+      </div>
+
+      <label class="field-label" for="qualityRange">Kualitas mesh (resolusi marching cubes)</label>
+      <input type="range" id="qualityRange" min="128" max="384" step="32" value="256">
+      <div class="range-value"><span id="qualityValue">256</span></div>
+    </section>
+
+    <!-- Generate -->
+    <section class="panel">
+      <button id="generateBtn" class="btn-primary" disabled>
+        <span class="btn-ripple"></span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        Generate Model 3D
+      </button>
+
+      <div id="genStatus" class="gen-status hidden">
+        <div class="progress-wrap">
+          <div class="progress-track"><div id="genProgressBar" class="progress-bar"></div></div>
+          <span id="genProgressLabel" class="progress-label">0%</span>
+        </div>
+        <p id="genMessage" class="gen-message">Menunggu...</p>
+        <p id="genEta" class="gen-eta"></p>
+      </div>
+
+      <div id="genError" class="gen-error hidden"></div>
+    </section>
+
+    <!-- Download -->
+    <section class="panel" id="downloadPanel" hidden>
+      <h2 class="panel-title">3. Unduh Model</h2>
+      <div id="downloadButtons" class="download-list"></div>
+      <button id="resetBtn" class="btn-ghost" type="button">Reset</button>
+    </section>
+
+    <!-- History -->
+    <section class="panel" id="historyPanel">
+      <h2 class="panel-title">Riwayat Terbaru</h2>
+      <div id="historyList" class="history-list">
+        <p class="history-empty">Belum ada model yang dibuat.</p>
+      </div>
+    </section>
+
+  </aside>
+
+  <!-- ============ VIEWER ============ -->
+  <main class="viewer-wrap">
+
+    <div class="viewer-toolbar">
+      <div class="toolbar-group">
+        <button id="autoRotateBtn" class="tool-btn active" title="Auto rotate">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M21 12a9 9 0 1 1-2.6-6.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M21 4v5h-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button id="resetCameraBtn" class="tool-btn" title="Reset kamera">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="M9 12h6M12 9v6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+        <button id="wireframeBtn" class="tool-btn" title="Mode wireframe">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 3 3 8v8l9 5 9-5V8l-9-5Z" stroke="currentColor" stroke-width="1.5"/><path d="M3 8l9 5 9-5M12 13v8" stroke="currentColor" stroke-width="1.3"/></svg>
+        </button>
+        <button id="screenshotBtn" class="tool-btn" title="Ambil screenshot">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13.5" r="3.2" stroke="currentColor" stroke-width="1.6"/></svg>
+        </button>
+      </div>
+      <div class="toolbar-group">
+        <button id="fullscreenBtn" class="tool-btn" title="Layar penuh">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="viewerCanvasWrap" class="viewer-canvas-wrap">
+      <canvas id="viewerCanvas"></canvas>
+
+      <div id="viewerEmptyState" class="viewer-empty">
+        <div class="viewer-empty-badge">
+          <svg width="52" height="52" viewBox="0 0 32 32" fill="none"><path d="M16 2 28 9v14L16 30 4 23V9L16 2Z" stroke="var(--accent)" stroke-width="1.5" opacity="0.7"/></svg>
+        </div>
+        <h3>Belum ada model</h3>
+        <p>Unggah gambar di panel kiri, lalu klik <strong>Generate Model 3D</strong> untuk melihat hasilnya di sini.</p>
+      </div>
+
+      <div id="viewerLoading" class="viewer-loading hidden">
+        <div class="spinner"></div>
+        <p id="viewerLoadingText">Memuat model...</p>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<div id="toastRoot" class="toast-root"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r169/three.module.min.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+  }
+}
+</script>
+
+<script src="api.js"></script>
+<script type="module" src="viewer.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
